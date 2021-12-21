@@ -28,10 +28,19 @@ class BoardSurface():
         self.square_size = ans.tolist()
 
         self.init_pieces()
-        self.init_pygeme()
 
         return
 
+
+    def init_pieces(self):
+        self.pieces_on_board = np.full(self.board_squares,np.nan)
+        self.pieces_on_board[3,3] = BLACK_PIECE
+        self.pieces_on_board[4,4] = BLACK_PIECE
+        self.pieces_on_board[3,4] = WHITE_PIECE
+        self.pieces_on_board[4,3] = WHITE_PIECE
+
+        self.player_turn = BLACK_PIECE
+        return
 
     def init_pygeme(self):
 
@@ -48,19 +57,10 @@ class BoardSurface():
         return
 
 
-    def init_pieces(self):
-        self.pieces_on_board = np.full(self.board_squares,np.nan)
-        self.pieces_on_board[3,3] = BLACK_PIECE
-        self.pieces_on_board[4,4] = BLACK_PIECE
-        self.pieces_on_board[3,4] = WHITE_PIECE
-        self.pieces_on_board[4,3] = WHITE_PIECE
-
-        self.player_turn = BLACK_PIECE
-        return
-
-
     def run(self):
+        self.init_pygeme()
         self.draw_background()
+
         while(True):
             self.draw_board_frame()
             self.draw_pieces()
@@ -73,9 +73,17 @@ class BoardSurface():
             if judge is not True:
                 if judge != PASS:
                     self.game_over(judge)
+                    pygame.display.update()
                     time.sleep(5)
                     pygame.quit()
                     sys.exit()
+
+            if self.player_turn == WHITE_PIECE:
+                self.auto_player()
+                time.sleep(0.3)
+            elif self.player_turn == BLACK_PIECE:
+                self.auto_player()
+                time.sleep(0.3)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -85,6 +93,7 @@ class BoardSurface():
                     if event.button == pygame.BUTTON_LEFT:
                         x, y = event.pos
                         self.mouse_left_clicked(event.pos)
+
 
 
     def draw_background(self):
@@ -329,6 +338,10 @@ class BoardSurface():
         ans = ans.astype('uint8')
         mpos_index = ans.tolist()
 
+        self.player_procedure(mpos_index)
+
+
+    def player_procedure(self,mpos_index):
         try:
             if self.judge_empty_square(mpos_index):
                 candidate_pos = self.judge_put_square(
@@ -344,11 +357,12 @@ class BoardSurface():
                     self.pieces_on_board[x_index, y_index] = self.player_turn
 
                     self.player_turn = 1 - self.player_turn
+                    return True
 
         except ReversiException:
             raise ReversiException(ReversiException.NOT_EMPTY)
 
-        return
+        return False
 
 
     def judge_trun(self):
@@ -367,9 +381,9 @@ class BoardSurface():
         empty_count = np.count_nonzero(np.isnan(self.pieces_on_board))
         if not empty_count:
             if black > white:
-                return WHITE_WIN
-            elif black < white:
                 return BLACK_WIN
+            elif black < white:
+                return WHITE_WIN
             else:
                 return DRAW
         else:
@@ -503,6 +517,25 @@ class BoardSurface():
                 screen_h/2-dialog_size[Y]/2+14
                 ]
             )
+
+
+    def auto_player(self):
+        import random
+
+        X, Y = 0, 1
+
+        empty = np.where(np.isnan(self.pieces_on_board))
+        empty_pos_list = [(x, y) for x, y in zip(empty[X],empty[Y])]
+
+
+        while(True):
+            index = random.randint(0,len(empty_pos_list)-1)
+            pos = empty_pos_list[index]
+            if self.player_procedure(pos):
+                break
+            time.sleep(0.05)
+
+        return
 
 if __name__ == '__main__':
     BoardSurface().run()
