@@ -59,6 +59,9 @@ class BoardSurface():
         return
 
     def init_game_record(self):
+        """ 盤面配列初期化
+        """
+
         self.game_record = {
             'result': {
                 'black': None, 'wihte': None,
@@ -727,6 +730,13 @@ class BoardSurface():
         return
 
     def record_play_turn(self, pos: tuple, turn: int):
+        """ 指しての記録
+
+        Args:
+            pos (tuple): マス目インデックス(x_index,y_index)
+            turn (int): プレイヤーターン
+        """
+
         if isinstance(pos, tuple) and isinstance(turn, int):
             if len(pos) == 2:
                 x_index, y_index = pos
@@ -748,6 +758,9 @@ class BoardSurface():
         return
 
     def record_game_result(self):
+        """ ゲーム結果の記録
+        """
+
         counters = self.count_pieces()
         black = counters[BLACK_PIECE]
         white = counters[WHITE_PIECE]

@@ -1,3 +1,19 @@
+"""
+FileName:
+--------------------------------------------------------------------------------
+    result_learning.py
+
+Description:
+--------------------------------------------------------------------------------
+    リバーシのゲーム結果の学習
+
+History:
+--------------------------------------------------------------------------------
+    2021/12/22 作成
+
+"""
+
+
 import json
 import linecache
 import numpy as np
@@ -8,6 +24,8 @@ import reversi_game as game
 
 class LearningResult():
     def __init__(self):
+        """ 初期化
+        """
         current = os.getcwd()
         file_path = current + "/source/data/game_result.txt"
         if os.path.exists(file_path):
@@ -16,19 +34,28 @@ class LearningResult():
             self.file_path = None
 
     def run(self):
+        """ 実行ループ処理
+        """
+
         if self.file_path:
             self.create_reversi_game()
 
             game_record = self.read_game_record()
-            self.assemble_game_array(game_record)
+            record_pieces_on_board = self.assemble_game_array(game_record)
 
         return
 
     def create_reversi_game(self):
+        """ リバーシゲームのインスタンス生成
+        """
+
         self.game = game.BoardSurface()
         self.game.init_pieces()
 
     def read_game_record(self):
+        """ ゲーム結果の読み込み
+        """
+
         game_record = list()
 
         line = linecache.getline(self.file_path, 1)
@@ -41,8 +68,18 @@ class LearningResult():
         return game_record
 
     def assemble_game_array(self, game_record):
+        """ ゲーム指手の配列作成
+
+        Args:
+            game_record (list): ゲーム指手の文字列リスト
+        """
 
         def _create_borad_():
+            """ 盤面の作成
+
+            Returns:
+                (list): np.arrayのリスト(盤面、黒盤面、白盤面)
+            """
             board = self.game.pieces_on_board.copy()
             black_board = np.where(board == game.WHITE_PIECE, np.nan, board)
             black_board = np.where(
@@ -55,13 +92,13 @@ class LearningResult():
 
             return board, black_board, white_board
 
-        self.record_pieces_on_board = np.full(
+        record_pieces_on_board = np.full(
             [1, 3, ] + list(self.game.board_squares), np.nan)
-        self.record_pieces_on_board[0][0] = self.game.pieces_on_board.copy()
+        record_pieces_on_board[0][0] = self.game.pieces_on_board.copy()
 
         board, black_board, white_board = _create_borad_()
-        self.record_pieces_on_board[0][1] = black_board
-        self.record_pieces_on_board[0][2] = white_board
+        record_pieces_on_board[0][1] = black_board
+        record_pieces_on_board[0][2] = white_board
 
         for turn in game_record:
             if turn[0] == 'b':
@@ -74,11 +111,11 @@ class LearningResult():
 
             board, black_board, white_board = _create_borad_()
 
-            self.record_pieces_on_board = \
-                np.append(self.record_pieces_on_board,
+            record_pieces_on_board = \
+                np.append(record_pieces_on_board,
                           [[board, black_board, white_board]], axis=0)
 
-        return
+        return record_pieces_on_board
 
 
 if __name__ == '__main__':
