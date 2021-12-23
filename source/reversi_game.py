@@ -69,7 +69,11 @@ class BoardSurface():
             'process': '',
         }
 
-    def run(self, isMsample: bool = False, isAutoBlack: bool = False, isAutoWhite: bool = False):
+    def run(self,
+            isMsample: bool = False,
+            isAutoBlack: bool = False,
+            isAutoWhite: bool = False
+            ):
         """ ゲーム実行開始
         """
 

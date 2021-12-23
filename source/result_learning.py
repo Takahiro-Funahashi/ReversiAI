@@ -43,6 +43,8 @@ class LearningResult():
             game_record = self.read_game_record()
             record_pieces_on_board = self.assemble_game_array(game_record)
 
+            print(record_pieces_on_board)
+
         return
 
     def create_reversi_game(self):
