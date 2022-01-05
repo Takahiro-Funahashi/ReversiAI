@@ -118,11 +118,11 @@ class BoardSurface():
                         break
 
             # 自動配置処理
-            if self.player_turn == WHITE_PIECE and isAutoWhite:
+            if self.player_turn == WHITE_PIECE and isAutoBlack:
                 self.auto_player(isMsample)
                 if not isMsample:
                     time.sleep(0.1)
-            elif self.player_turn == BLACK_PIECE and isAutoBlack:
+            elif self.player_turn == BLACK_PIECE and isAutoWhite:
                 self.auto_player(isMsample)
                 if not isMsample:
                     time.sleep(0.1)
@@ -785,10 +785,10 @@ class BoardSurface():
 
 
 if __name__ == '__main__':
-    isPlaygame = False
+    isPlaygame = True
 
     if isPlaygame:
-        result = BoardSurface().run(True, True, True)
+        result = BoardSurface().run(False, True, False)
     else:
         # 試行回数
         practice_time = 5000
