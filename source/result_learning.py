@@ -18,8 +18,17 @@ import json
 import linecache
 import numpy as np
 import os
+import pygame
+import sys
 
-import reversi_game as game
+source_path = os.getcwd() + '\\source'
+if os.path.exists(source_path):
+    sys.path.append(source_path)
+    import reversi_game as game
+    import draw_game
+else:
+    print('error:The source code path is incorrect.')
+    sys.exit()
 
 
 class LearningResult():
@@ -43,7 +52,35 @@ class LearningResult():
             game_record = self.read_game_record()
             record_pieces_on_board = self.assemble_game_array(game_record)
 
-            print(record_pieces_on_board)
+            self.game.init_pygeme()
+            self.game.draw_background()
+            self.game.draw_board_frame()
+
+            isSuspend = False
+
+            for record_pieces in record_pieces_on_board:
+                on_board = record_pieces[0]
+                self.game.draw_pieces(on_board)
+                pygame.display.update()
+                cnt_limit = 600
+                interval = 60
+                timer_id = 25
+                pygame.time.set_timer(timer_id, interval)
+
+                while(cnt_limit):
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            cnt_limit = 0
+                            isSuspend = True
+                            pygame.event.clear()
+                            break
+                        if event.type == timer_id:
+                            cnt_limit -= interval
+                if isSuspend:
+                    break
+
+            pygame.register_quit(self.quit)
+            pygame.quit()
 
         return
 
@@ -51,7 +88,7 @@ class LearningResult():
         """ リバーシゲームのインスタンス生成
         """
 
-        self.game = game.BoardSurface()
+        self.game = game.ReversiGame()
         self.game.init_pieces()
 
     def read_game_record(self):
@@ -60,7 +97,7 @@ class LearningResult():
 
         game_record = list()
 
-        line = linecache.getline(self.file_path, 1)
+        line = linecache.getline(self.file_path, 10)
         data = json.loads(line)
         if isinstance(data, dict):
             if 'process' in data:
@@ -118,6 +155,10 @@ class LearningResult():
                           [[board, black_board, white_board]], axis=0)
 
         return record_pieces_on_board
+
+    def quit(self):
+        print('終了します。')
+        return
 
 
 if __name__ == '__main__':

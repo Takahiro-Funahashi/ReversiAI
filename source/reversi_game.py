@@ -1,15 +1,15 @@
 """
 FileName:
 --------------------------------------------------------------------------------
-    reversi_game.py
+    draw_game.py
 
 Description:
 --------------------------------------------------------------------------------
-    リバーシのゲーム動作
+    リバーシのゲーム描画
 
 History:
 --------------------------------------------------------------------------------
-    2021/12/21 作成
+    2022/01/06 作成
 
 """
 
@@ -19,40 +19,35 @@ import os
 import pygame
 import random
 import time
+import sys
 
-BLACK_PIECE = 0
-WHITE_PIECE = 1
+source_path = os.getcwd() + '\\source'
+if os.path.exists(source_path):
+    sys.path.append(source_path)
+    import draw_game
+else:
+    print('error:The source code path is incorrect.')
+    sys.exit()
 
-BLACK_WIN = 0
-WHITE_WIN = 1
-DRAW = 2
-PASS = -1
+BLACK_PIECE = draw_game.BLACK_PIECE
+WHITE_PIECE = draw_game.WHITE_PIECE
+
+BLACK_WIN = draw_game.BLACK_WIN
+WHITE_WIN = draw_game.WHITE_WIN
+DRAW = draw_game.DRAW
+PASS = draw_game.PASS
 
 
 class ReversiException(Exception):
     NOT_EMPTY = 'NOT EMPTY SQUARE'
 
 
-class BoardSurface():
+class ReversiGame(draw_game.BoardSurface):
     def __init__(self):
         """ 初期化
         """
 
-        # ボードサイズ
-        self.board_size = (400, 400)
-        # 縦横のオフセット幅
-        self.screnn_offset = (40, 80)
-        # スクリーンサイズをボードサイズとオフセットから計算
-        ans = np.array(self.board_size) + (np.array(self.screnn_offset)*2)
-        self.screen_size = ans.tolist()
-        # マス目
-        self.board_squares = (8, 8)
-        # マスサイズを算出
-        ans = np.array(self.board_size) / np.array(self.board_squares)
-        self.square_size = ans.tolist()
-
-        # フォントサイズ
-        self.font_size = 24
+        super().__init__()
 
         self.init_game_record()
 
@@ -95,19 +90,22 @@ class BoardSurface():
                 # 盤面枠描画
                 self.draw_board_frame()
                 # 駒描画
-                self.draw_pieces()
+                self.draw_pieces(self.pieces_on_board)
                 # プレイヤーターン描画
-                self.draw_player()
+                self.draw_player(self.player_turn)
                 # 黒白コマ数描画
-                self.draw_counter()
+                self.draw_counter(self.pieces_on_board)
                 # GUI描画更新
                 pygame.display.update()
 
             # ゲームの判定
-            judge = self.judge_trun()
-            if judge is not True:
-                if judge != PASS:
-                    self.record_game_result()
+            judge = self.judge_trun(self.player_turn, self.pieces_on_board)
+            if 'player_turn' in judge:
+                self.player_turn = judge['player_turn']
+            if 'judge' in judge:
+                game_judge = judge['judge']
+                if game_judge != PASS:
+                    self.record_game_result(self.pieces_on_board)
                     if not isMsample:
                         self.draw_game_over(judge)
                         pygame.display.update()
@@ -157,323 +155,6 @@ class BoardSurface():
         self.player_turn = BLACK_PIECE
 
         return
-
-    def init_pygeme(self):
-        """ PyGame(GUI)初期化
-        """
-
-        pygame.init()
-        self.game_screen = pygame.display.set_mode(
-            size=self.screen_size,
-            # flags=pygame.FULLSCREEN,
-        )
-        pygame.display.set_caption('ReversiAI')
-
-        self.game_font = pygame.font.Font(
-            None, self.font_size)
-
-        return
-
-    def draw_background(self):
-        """ 背景描画
-        """
-
-        self.game_screen.fill('darkgreen')
-
-    def draw_board_frame(self):
-        """ 盤面枠の描画
-        """
-        X, Y = 0, 1
-        screen = self.game_screen
-        offset_x, offset_y = self.screnn_offset
-        board_w, board_h = self.board_size
-
-        line_width = 2
-
-        # 盤面背景
-        pygame.draw.rect(
-            surface=screen,
-            color='forestgreen',
-            rect=pygame.Rect(
-                offset_x, offset_y,
-                board_w, board_h,
-            ),
-            border_radius=0,
-        )
-
-        # 盤面外枠
-        pygame.draw.lines(
-            surface=screen,
-            color='black',
-            closed=True,
-            points=[
-                (offset_x, offset_y),
-                (board_w+offset_x-1, offset_y),
-                (board_w+offset_x-1, board_h+offset_y-1),
-                (offset_x, board_h+offset_y-1),
-            ],
-            width=line_width,
-        )
-
-        # 盤面縦線
-        H_sq_size, V_sq_size = self.square_size
-        for x_index in range(1, self.board_squares[X]):
-            pygame.draw.line(
-                surface=screen,
-                color='black',
-                start_pos=(offset_x+H_sq_size*x_index-1, offset_y),
-                end_pos=(offset_x+H_sq_size*x_index-1, board_h+offset_y-1),
-                width=line_width
-            )
-
-        # 盤面横線
-        for y_index in range(1, self.board_squares[Y]):
-            pygame.draw.line(
-                surface=screen,
-                color='black',
-                start_pos=(offset_x, offset_y+V_sq_size*y_index-1),
-                end_pos=(board_w+offset_x-1, offset_y+V_sq_size*y_index-1),
-                width=line_width
-            )
-
-        # マス目インデックス表示
-        hex_A = 0x41
-        for x_index in range(self.board_squares[X]):
-            text = self.game_font.render(
-                chr(hex_A+x_index),
-                False,
-                'white',
-            )
-
-            screen.blit(
-                text,
-                [
-                    offset_x+H_sq_size*x_index+H_sq_size/2-self.font_size/4,
-                    offset_y-self.font_size
-                ]
-            )
-
-            screen.blit(
-                text,
-                [
-                    offset_x+H_sq_size*x_index+H_sq_size/2-self.font_size/4,
-                    offset_y+board_h+self.font_size/2
-                ]
-            )
-
-        hex_1 = 0x31
-        for y_index in range(self.board_squares[Y]):
-            text = self.game_font.render(
-                chr(hex_1+y_index),
-                False,
-                'white',
-            )
-
-            screen.blit(
-                text,
-                [
-                    offset_x-self.font_size,
-                    offset_y+V_sq_size*y_index+V_sq_size/2-self.font_size/4
-                ]
-            )
-
-            screen.blit(
-                text,
-                [
-                    offset_x+board_w+self.font_size/2,
-                    offset_y+V_sq_size*y_index+V_sq_size/2-self.font_size/4
-                ]
-            )
-
-        return
-
-    def draw_pieces(self):
-        """ 駒配置描画
-        """
-
-        X, Y = 0, 1
-        screen = self.game_screen
-        offset_x, offset_y = self.screnn_offset
-
-        p_offset = 2
-
-        # 黒白コマのマス目を抽出
-        black_pieces = np.where(self.pieces_on_board == BLACK_PIECE)
-        white_pieces = np.where(self.pieces_on_board == WHITE_PIECE)
-
-        if black_pieces:
-            raw, clm = black_pieces
-            for x_index, y_index in zip(raw, clm):
-                cx = offset_x + self.square_size[X] * \
-                    x_index + self.square_size[X]/2
-                cy = offset_y + self.square_size[Y] * \
-                    y_index + self.square_size[Y]/2
-                pygame.draw.circle(
-                    surface=screen,
-                    color='black',
-                    center=(cx, cy),
-                    radius=self.square_size[X]/2-p_offset*2,
-                )
-
-        if white_pieces:
-            raw, clm = white_pieces
-            for x_index, y_index in zip(raw, clm):
-                cx = offset_x + self.square_size[X] * \
-                    x_index + self.square_size[X]/2
-                cy = offset_y + self.square_size[Y] * \
-                    y_index + self.square_size[Y]/2
-                pygame.draw.circle(
-                    surface=screen,
-                    color='white',
-                    center=(cx, cy),
-                    radius=self.square_size[X]/2-p_offset*2,
-                )
-
-        return
-
-    def draw_player(self):
-        """ プレイヤーターン描画
-        """
-
-        X, Y = 0, 1
-        t_offset_x, t_offset_y = 10, 20
-        screen = self.game_screen
-
-        text_msg = 'Player'
-        text = self.game_font.render(
-            text_msg,
-            False,
-            'white',
-        )
-        screen.blit(
-            text,
-            [t_offset_x, t_offset_y]
-        )
-        size = self.game_font.size(text_msg)
-
-        if self.player_turn == BLACK_PIECE:
-            color = 'black'
-        elif self.player_turn == WHITE_PIECE:
-            color = 'white'
-
-        circle_size = self.font_size/2
-
-        pygame.draw.circle(
-            surface=screen,
-            color=color,
-            center=(t_offset_x*4+size[X], t_offset_y+size[Y]/2),
-            radius=circle_size,
-        )
-
-        return
-
-    def draw_counter(self):
-        """ 黒白コマ数描画
-
-        """
-        Y = 1
-        t_offset_x = 10
-        screen = self.game_screen
-        circle_size = self.font_size/2
-
-        cx = t_offset_x+circle_size
-        cy = self.screen_size[Y] - self.font_size
-
-        pygame.draw.circle(
-            surface=screen,
-            color='black',
-            center=(cx, cy),
-            radius=circle_size,
-        )
-
-        pygame.draw.circle(
-            surface=screen,
-            color='white',
-            center=(cx+circle_size*5, cy),
-            radius=circle_size,
-        )
-
-        pieces_counter = self.count_pieces()
-        text_msg = str(pieces_counter[BLACK_PIECE])
-        text = self.game_font.render(
-            text_msg,
-            False,
-            'white',
-            'darkgreen'
-        )
-        screen.blit(
-            text,
-            [cx+circle_size*2, cy-5]
-        )
-        text_msg = str(pieces_counter[WHITE_PIECE])
-        text = self.game_font.render(
-            text_msg,
-            False,
-            'white',
-            'darkgreen'
-        )
-        screen.blit(
-            text,
-            [cx+circle_size*7, cy-5]
-        )
-
-        return
-
-    def draw_game_over(self, judge: int):
-        """ ゲーム終了表示
-
-        Args:
-            judge (int): 勝敗結果
-        """
-
-        X, Y = 0, 1
-        dialog_size = (150, 40)
-        screen = self.game_screen
-
-        screen_w, screen_h = self.screen_size
-
-        pygame.draw.rect(
-            surface=screen,
-            color='gray',
-            rect=pygame.Rect(
-                screen_w/2-dialog_size[X]/2, screen_h/2-dialog_size[Y]/2,
-                dialog_size[X], dialog_size[Y],
-            ),
-            border_radius=0,
-        )
-
-        if judge == BLACK_WIN:
-            text_msg = 'Black Wins!!'
-        if judge == WHITE_WIN:
-            text_msg = 'White Wins!!'
-        if judge == DRAW:
-            text_msg = 'Draw!!'
-
-        text = self.game_font.render(
-            text_msg,
-            False,
-            'red',
-        )
-
-        screen.blit(
-            text,
-            [
-                screen_w/2-dialog_size[X]/2+20,
-                screen_h/2-dialog_size[Y]/2+14
-            ]
-        )
-
-    def count_pieces(self):
-        """ 黒白コマ数カウント
-
-        Returns:
-            (dict): BLACK_PIECE,WHITE_PIECEをKeyとして、個数をDict型で返信
-        """
-
-        black_count = np.count_nonzero(self.pieces_on_board == BLACK_PIECE)
-        white_count = np.count_nonzero(self.pieces_on_board == WHITE_PIECE)
-
-        return {BLACK_PIECE: black_count, WHITE_PIECE: white_count}
 
     def mouse_left_clicked(self, pos: list):
         """ マウス左クリックイベント
@@ -537,7 +218,7 @@ class BoardSurface():
 
         return False
 
-    def judge_trun(self):
+    def judge_trun(self, player_turn, pieces_on_board):
         """ パス・ゲーム終了判定
 
         Returns:
@@ -547,8 +228,10 @@ class BoardSurface():
         X, Y = 0, 1
         isOver = False
 
+        ret_dict = dict()
+
         # コマ数取得
-        counters = self.count_pieces()
+        counters = self.count_pieces(pieces_on_board)
         black = counters[BLACK_PIECE]
         white = counters[WHITE_PIECE]
 
@@ -560,9 +243,9 @@ class BoardSurface():
             return BLACK_WIN
 
         # 駒未配置箇所の取得
-        empty = np.where(np.isnan(self.pieces_on_board))
+        empty = np.where(np.isnan(pieces_on_board))
         # 駒未配置箇所のカウント
-        empty_count = np.count_nonzero(np.isnan(self.pieces_on_board))
+        empty_count = np.count_nonzero(np.isnan(pieces_on_board))
 
         # 駒未配置箇所がなくなったら終了
         if empty_count:
@@ -572,14 +255,14 @@ class BoardSurface():
             for empty_pos in empty_pos_list:
                 pos = self.judge_put_square(
                     pos_index=empty_pos,
-                    turn=self.player_turn,
+                    turn=player_turn,
                 )
                 if pos:
                     judge1.append(pos)
             for empty_pos in empty_pos_list:
                 pos = self.judge_put_square(
                     pos_index=empty_pos,
-                    turn=1-self.player_turn,
+                    turn=1-player_turn,
                 )
                 if pos:
                     judge2.append(pos)
@@ -587,21 +270,26 @@ class BoardSurface():
             if not judge1 and not judge2:
                 isOver = True
             elif not judge1:
-                self.player_turn = 1 - self.player_turn
-                return PASS
+                player_turn = 1 - player_turn
+                ret_dict.setdefault('judge', PASS)
+
         elif not empty_count:
             isOver = True
 
+        ret_dict.setdefault('player_turn', player_turn)
+
         if isOver:
+            judge = None
             # 勝ち負け判定
             if black > white:
-                return BLACK_WIN
+                judge = BLACK_WIN
             elif black < white:
-                return WHITE_WIN
+                judge = WHITE_WIN
             else:
-                return DRAW
+                judge = DRAW
+            ret_dict.setdefault('judge', judge)
 
-        return True
+        return ret_dict
 
     def judge_empty_square(self, pos_index: list):
         """ 未配置マス目の判定
@@ -761,11 +449,11 @@ class BoardSurface():
 
         return
 
-    def record_game_result(self):
+    def record_game_result(self, pieces_on_board):
         """ ゲーム結果の記録
         """
 
-        counters = self.count_pieces()
+        counters = self.count_pieces(pieces_on_board)
         black = counters[BLACK_PIECE]
         white = counters[WHITE_PIECE]
 
@@ -788,7 +476,7 @@ if __name__ == '__main__':
     isPlaygame = True
 
     if isPlaygame:
-        result = BoardSurface().run(False, True, False)
+        result = ReversiGame().run(False, True, False)
     else:
         # 試行回数
         practice_time = 5000
@@ -800,7 +488,7 @@ if __name__ == '__main__':
         isAutoWhite = True
 
         while(counter):
-            result = BoardSurface().run(isMsample, isAutoBlack, isAutoWhite)
+            result = ReversiGame().run(isMsample, isAutoBlack, isAutoWhite)
             print('Game{:4d}'.format(practice_time+1-counter))
             print(result)
             counter -= 1
