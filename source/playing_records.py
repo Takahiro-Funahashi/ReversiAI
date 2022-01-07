@@ -1,7 +1,7 @@
 """
 FileName:
 --------------------------------------------------------------------------------
-    result_learning.py
+    playing_records.py
 
 Description:
 --------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ else:
     sys.exit()
 
 
-class LearningResult():
+class PlayingGameRecords():
     def __init__(self):
         """ 初期化
         """
@@ -47,40 +47,42 @@ class LearningResult():
         """
 
         if self.file_path:
-            self.create_reversi_game()
 
-            game_record = self.read_game_record()
-            record_pieces_on_board = self.assemble_game_array(game_record)
+            game_records = self.read_game_record()
+            for game_record in game_records.values():
+                self.create_reversi_game()
+                record_pieces_on_board = self.assemble_game_array(game_record)
 
-            self.game.init_pygeme()
-            self.game.draw_background()
-            self.game.draw_board_frame()
+                self.game.init_pygeme()
+                self.game.draw_background()
+                self.game.draw_board_frame()
 
-            isSuspend = False
+                isSuspend = False
 
-            for record_pieces in record_pieces_on_board:
-                on_board = record_pieces[0]
-                self.game.draw_pieces(on_board)
-                pygame.display.update()
-                cnt_limit = 600
-                interval = 60
-                timer_id = 25
-                pygame.time.set_timer(timer_id, interval)
+                for record_pieces in record_pieces_on_board:
+                    on_board = record_pieces[0]
+                    self.game.draw_pieces(on_board)
+                    pygame.display.update()
+                    cnt_limit = 300
+                    interval = 60
+                    timer_id = 25
+                    pygame.time.set_timer(timer_id, interval)
 
-                while(cnt_limit):
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            cnt_limit = 0
-                            isSuspend = True
-                            pygame.event.clear()
-                            break
-                        if event.type == timer_id:
-                            cnt_limit -= interval
-                if isSuspend:
-                    break
+                    while(cnt_limit):
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                cnt_limit = 0
+                                isSuspend = True
+                                pygame.event.clear()
+                                break
+                            if event.type == timer_id:
+                                cnt_limit -= interval
+                    if isSuspend:
+                        break
 
-            pygame.register_quit(self.quit)
-            pygame.quit()
+                pygame.register_quit(self.quit)
+                pygame.time.wait(200)
+                pygame.quit()
 
         return
 
@@ -95,16 +97,24 @@ class LearningResult():
         """ ゲーム結果の読み込み
         """
 
-        game_record = list()
+        game_records = dict()
 
-        line = linecache.getline(self.file_path, 10)
-        data = json.loads(line)
-        if isinstance(data, dict):
-            if 'process' in data:
-                game_record = data['process']
-                game_record = [game_record[i: i+3]
-                               for i in range(0, len(game_record), 3)]
-        return game_record
+        with open(self.file_path) as f:
+            line_count = sum([1 for line in f])
+
+        if line_count:
+            for line_number in range(line_count):
+                game_record = list()
+
+                line = linecache.getline(self.file_path, line_number+1)
+                data = json.loads(line)
+                if isinstance(data, dict):
+                    if 'process' in data:
+                        game_record = data['process']
+                        game_record = [game_record[i: i+3]
+                                       for i in range(0, len(game_record), 3)]
+                        game_records.setdefault(line_number+1, game_record)
+        return game_records
 
     def assemble_game_array(self, game_record):
         """ ゲーム指手の配列作成
@@ -162,4 +172,4 @@ class LearningResult():
 
 
 if __name__ == '__main__':
-    LearningResult().run()
+    PlayingGameRecords().run()
